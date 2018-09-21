@@ -1,4 +1,4 @@
-# tm-ticker
+# TM-Ticker
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Build Status](https://travis-ci.org/taitulism/ticker.svg?branch=develop)](https://travis-ci.org/taitulism/ticker)
 
@@ -24,17 +24,17 @@ const Ticker = require('tm-ticker');
 // construct & config
 const t = new Ticker(interval, callback, tickOnStart = true)
 
-// or just construct and config later
+// or just construct (and config later)
 const t = new Ticker()
 ```
 
 
 #### Config:
 ```js
+t.tickOnStart = bool // deafult: true
 t.setInterval(number)
 t.setCallback(fn)
 t.set(interval, callback)
-t.setTickOnStart(bool)
 ```
 
 
@@ -42,6 +42,9 @@ t.setTickOnStart(bool)
 > `now` is optional
 ```js
  t.start(now)
+```
+```js
+ t.getTimeLeft(now)
 ```
 ```js
  t.stop(now)
@@ -83,11 +86,17 @@ myTicker.setCallback(myFunc)
 myTicker.set(1000, myFunc)
 
 // default is true.
-myTicker.setTickOnStart(false)
+myTicker.tickOnStart = false
+```
+
+You can also set the `interval` & `callback` directly as props but this way bypasses type validation for both and min number validation for `interval` (should be greater than *50*ms).
+```js
+myTicker.interval = 1000
+myTicker.callback = myFunc
 ```
 
 ## Methods
-All methods can get call with a `timestamp` argument. Pass in a current timestamp when you need to sync time with other modules.
+All methods can get called with a `timestamp` argument. Pass in a current timestamp when you need to sync time with other modules.
 
 * `timestamp` (ms, number, optional) - The timestamp to be considered as the method's execution time.
 
@@ -106,13 +115,25 @@ myTicker.start(timestamp)
 ```
 
 
+## .getTimeLeft()
+Returns how many milliseconds left to next tick.
+
+```js
+const myTicker = new Ticker(1000, callback)
+
+myTicker.start()
+
+// after two ticks and about a half (2480ms)
+myTicker.getTimeLeft() // --> 520
+```
+
+
 ## .stop()
 Stop/Pause ticking.
 
 When called, the Ticker instance calculates the time left to next tick and stores it on a `timeLeft` prop in case you'll want to resume ticking from exact same point.  
 Run `.start()` to resume.  
 
-Example:
 ```js
 const myTicker = new Ticker(1000, sayTick)
 
@@ -154,9 +175,9 @@ myTicker.start() // new start point
 ## .destroy()
 Destroy the ticker.
 
-Calls `.stop()` and  `.reset()` and removes the ticker's callback.  
+Calls `.stop()` and  `.reset()` and set the `.isOk` prop to `false`.  
 
-> *To use the same Ticker instance again, a callback must be set.*
+> *To use the same Ticker instance again, `isOk` should be set to `true`.*
 
 ```js
 const myTicker = new Ticker(1000, sayTick)
@@ -164,7 +185,9 @@ const myTicker = new Ticker(1000, sayTick)
 myTicker.start()
 myTicker.destroy()
 
-myTicker.setCallback(sayTick)
+// Resurrection
+myTicker.isOk = true;
+
 myTicker.start()
 ```
 

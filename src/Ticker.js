@@ -2,7 +2,10 @@ const {
 	resume,
 	runTick,
 	setTickAt,
+	abort,
 } = require('./private-methods');
+
+const {getNow} = require('./common');
 
 const MIN_INTERVAL = 50;
 
@@ -13,67 +16,55 @@ class Ticker {
 
 		this.abort = null;
 		this.isRunning = false;
-		this._timeLeft = 0;
-		this.shouldTickOnStart = tickOnStart;
+		this.isOk = true;
+		this.tickOnStart = tickOnStart;
+		this.timeLeft = 0;
 		this.nextTick = 0;
 	}
 
-	get isPaused () {
-		// Stopped but not reseted
-		const isItPaused = this._timeLeft !== 0;
-
-		return isItPaused;
-	}
-
-	get timeLeft () {
+	getTimeLeft (now = getNow()) {
 		if (this.isRunning) {
-			return this.getTimeLeft();
+			return this.nextTick - now;
 		}
 
-		return this._timeLeft;
-	}
-
-	set timeLeft (val) {
-		this._timeLeft = val;
-	}
-
-	getTimeLeft (now = Date.now()) {
-		return this.nextTick - now;
+		return this.timeLeft;
 	}
 
 	setInterval (interval) {
 		validateInterval(interval);
 
 		this.interval = interval;
+
+		return this;
 	}
 
 	setCallback (fn) {
 		validateCallback(fn);
 
 		this.callback = fn;
-	}
 
-	setTickOnStart (bool) {
-		this.shouldTickOnStart = Boolean(bool);
+		return this;
 	}
 
 	set (interval, fn) {
 		this.setInterval(interval);
 		this.setCallback(fn);
+
+		return this;
 	}
 
-	start (now = Date.now()) {
-		if (this.isRunning) return;
+	start (now = getNow()) {
+		if (this.isRunning || !this.isOk) return this;
 
 		this.isRunning = true;
 
-		if (this.isPaused) {
+		if (this.timeLeft) {
 			resume.call(this, now);
 
-			return;
+			return this;
 		}
 
-		if (this.shouldTickOnStart) {
+		if (this.tickOnStart) {
 			runTick.call(this, now);
 		}
 		else {
@@ -81,20 +72,24 @@ class Ticker {
 
 			setTickAt.call(this, this.nextTick);
 		}
+
+		return this;
 	}
 
-	stop (now = Date.now()) {
-		if (!this.isRunning) return;
+	stop (now = getNow()) {
+		if (!this.isRunning) return this;
 
 		this.isRunning = false;
 
-		this.abort();
+		abort.call(this);
 
-		this.timeLeft = this.getTimeLeft(now);
+		this.timeLeft = this.nextTick - now;
+
+		return this;
 	}
 
-	reset (now = Date.now()) {
-		this.abort();
+	reset (now = getNow()) {
+		abort.call(this);
 
 		this.timeLeft = 0;
 		this.nextTick = 0;
@@ -103,14 +98,14 @@ class Ticker {
 			this.isRunning = false;
 			this.start(now);
 		}
+
+		return this;
 	}
 
 	destroy () {
-		this.stop();
-		this.reset();
+		this.stop().reset();
 
-		this.abort = null;
-		this.callback = null;
+		this.isOk = false;
 	}
 }
 
