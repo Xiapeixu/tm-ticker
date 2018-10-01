@@ -1,11 +1,11 @@
 {
   "name": "tm-ticker",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "An interval Ticker class (no GUI)",
   "main": "index.js",
   "scripts": {
     "test": "mocha ./test",
-    "tdd": "mocha ./test --watch",
+    "dev": "mocha ./test --watch",
     "playground": "node ./playground/index.js",
     "lint": "eslint index.js src test playground",
     "preversion": "npm run lint && npm test",
